@@ -64,35 +64,6 @@ The flasher does the 1200 bps touch itself; RST to GND only when the board
 has no working sketch, and it says so. `/dev/ttyACM*` is `root:dialout`:
 join `dialout` rather than running nix under sudo.
 
-## Tested without hardware
-
-`test/sim.cpp` compiles the same `.ino` against a fake Arduino core and a
-fake `ps2dev.h` (`test/`) with a virtual clock: replies to host commands,
-bytes held while the PC inhibits the line, the 1 s drop, a host command
-answered before a pending byte. `test/test_ps2term.py` checks the key →
-scan code table. Both run in `nix flake check`.
-
-## Next
-
-- [ ] **Known issue: Del repeat comes from the host.** Ctrl-B streams Del
-      over USB every 0.1 s; while the PC inhibits the line the firmware
-      blocks up to 1 s per byte, the backlog flushes later and can arrive
-      as broken make/break pairs (stuck keys). Fix: repeat in the firmware,
-      only after the PC sent `F4` (enable), never queued while inhibited.
-
-## Agent mistakes so far
-
-The firmware, client and docs are written by an AI agent; these are its
-errors, caught on the bench.
-
-- Started `Serial1` for a UART that was not wired. Its floating RX sits
-  next to the PS/2 pins, picked up the clock and sent `00` bytes to the
-  PC as keyboard overruns. No unused UART is started now.
-- Read pin voltages at the MCU as proof of wiring. ps2dev releases a line
-  with the internal pull-up on, so a lead that never reached the socket
-  still read 5 V. Continuity to the socket pin, PC off, is checked first
-  now.
-
 ## License
 
 MIT, see [LICENSE](LICENSE). The vendor documents in `docs/schemas/` keep
