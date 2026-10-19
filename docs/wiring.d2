@@ -1,0 +1,49 @@
+direction: right
+style.fill: "#16161d"
+
+classes: {
+  board: {style: {fill: "#1f1f28"; stroke: "#7e9cd8"; font-color: "#dcd7ba"; stroke-width: 2; border-radius: 6; bold: true}}
+  pin: {style: {fill: "#2a2a37"; stroke: "#54546d"; font-color: "#dcd7ba"; font-size: 20}}
+  gnd: {style: {stroke: "#727169"; stroke-width: 3; font-color: "#727169"}}
+  data: {style: {stroke: "#e6c384"; stroke-width: 3; font-color: "#e6c384"}}
+  clk: {style: {stroke: "#7fb4ca"; stroke-width: 3; font-color: "#7fb4ca"}}
+  usb: {style: {stroke: "#98bb6c"; stroke-width: 3; font-color: "#98bb6c"}}
+}
+
+title: "Linux terminal -> USB -> Pro Micro -> PS/2 keyboard port" {
+  near: top-center
+  shape: text
+  style: {font-color: "#dcd7ba"; font-size: 30; bold: true}
+}
+
+laptop: "Linux machine" {
+  class: board
+  term: "ps2term /dev/ttyACM0" {class: pin}
+}
+
+pm: "Pro Micro 5 V / 16 MHz" {
+  class: board
+  usb: "USB (power + scancodes)" {class: pin}
+  d2: "pin 2  CLOCK" {class: pin}
+  d3: "pin 3  DATA" {class: pin}
+  gnd: "GND" {class: pin}
+}
+
+ps2: "PS/2 socket (mini-DIN-6, target PC)" {
+  class: board
+  p5: "pin 5  CLOCK" {class: pin}
+  p1: "pin 1  DATA" {class: pin}
+  p3: "pin 3  GND" {class: pin}
+  p4: "pin 4  +5 V: leave unconnected" {class: pin}
+}
+
+laptop.term -> pm.usb: "set-2 scancodes / H xx, A xx" {class: usb}
+pm.d2 -> ps2.p5: "CLOCK" {class: clk}
+pm.d3 -> ps2.p1: "DATA" {class: data}
+pm.gnd -> ps2.p3: "GND" {class: gnd}
+
+note: "pin numbers as seen on the socket face, not the plug: a mirrored map puts CLOCK/DATA on NC pins 6/2\nprove continuity with the PC off: each lead beeps on its pin only" {
+  near: bottom-center
+  shape: text
+  style: {font-color: "#e6c384"; font-size: 24; italic: true}
+}

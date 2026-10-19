@@ -1,0 +1,52 @@
+# Tools come from the devshell PATH (flake.nix devShells.default).
+# Sequential: a fixer and the linter of the same file type must not race,
+# and parallel `stage_fixed` would fight over .git/index.lock.
+no_auto_install: true
+glob_matcher: doublestar
+
+pre-commit:
+  jobs:
+    - name: gitleaks
+      run: gitleaks git --staged --no-banner --redact --config .gitleaks.toml
+    # Names and hostnames live outside the repo, see .gitleaks.toml.
+    - name: gitleaks-personal
+      run: |
+        f="${XDG_CONFIG_HOME:-$HOME/.config}/gitleaks/personal.toml"
+        if [ -f "$f" ]; then
+          gitleaks git --staged --no-banner --redact --config "$f"
+        else
+          echo "gitleaks-personal: $f missing, identity check skipped" >&2
+        fi
+    - name: nixfmt
+      glob: "**/*.nix"
+      stage_fixed: true
+      run: nixfmt {staged_files}
+    - name: deadnix
+      glob: "**/*.nix"
+      run: deadnix --fail {staged_files}
+    - name: statix
+      glob: "**/*.nix"
+      run: statix check
+
+    - name: ruff-format
+      glob: "**/*.py"
+      stage_fixed: true
+      run: ruff format {staged_files}
+    - name: ruff
+      glob: "**/*.py"
+      run: ruff check {staged_files}
+
+    - name: clang-format
+      glob: "**/*.{ino,cpp,h}"
+      stage_fixed: true
+      run: clang-format -i {staged_files}
+    - name: cppcheck
+      glob: "**/*.{ino,cpp,h}"
+      run: cppcheck --language=c++ --enable=warning,style --error-exitcode=1 --inline-suppr -DARDUINO {staged_files}
+
+# Slow part: firmware sim, NixOS VM, Fritzing lint. Minutes when the VM is
+# cold, so it guards the push, not every commit.
+pre-push:
+  jobs:
+    - name: nix flake check
+      run: nix flake check
